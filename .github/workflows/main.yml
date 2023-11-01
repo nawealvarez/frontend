@@ -17,4 +17,4 @@ jobs:
           upstream_repo: https://github.com/LlibertadApp/frontend
           upstream_branch: dev
           downstream_branch: dev
-          token: ${{ env.GITHUB_TOKEN }}
+          token: ${{ secret.GITHUB_TOKEN }}

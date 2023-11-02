@@ -4,7 +4,7 @@ import { observer } from 'mobx-react';
 import Button from '#/components/button';
 import FlatList from '#/components/flatList';
 import ProgressIndicator from '#/components/progressIndicator';
-
+import Navbar from '#/components/navbar';
 import { FlatListTypeEnum } from '#/components/flatList/types';
 import { ProgressStepStatus } from '#/components/progressIndicator/types';
 import { ILoadInformationProps } from './types';
@@ -12,7 +12,6 @@ import { ILoadInformationProps } from './types';
 import { useState } from 'react';
 
 import './styles.css';
-import FormHeader from '#/components/formHeader';
 
 const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
   // Migrate to global state later?
@@ -79,7 +78,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
 
   const flatList = [
     {
-      logo: 'src/assets/logos/lla-logo.svg',
+      logo: 'assets/logos/lla-logo.svg',
       type: FlatListTypeEnum.milei,
       subTitle: 'Milei',
       title: 'Javier Gerardo',
@@ -87,7 +86,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       edit: true,
     },
     {
-      logo: 'src/assets/logos/uxp.svg',
+      logo: 'assets/logos/uxp.svg',
       type: FlatListTypeEnum.massa,
       subTitle: 'Massa',
       title: 'Sergio Tomas',
@@ -95,7 +94,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       edit: true,
     },
     {
-      logo: 'src/assets/icon/mail-invalid.svg',
+      logo: 'assets/icon/mail-invalid.svg',
       type: FlatListTypeEnum.null,
       subTitle: '',
       title: 'Votos nulos',
@@ -103,7 +102,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       edit: true,
     },
     {
-      logo: 'src/assets/icon/mail-appealed.svg',
+      logo: 'assets/icon/mail-appealed.svg',
       type: FlatListTypeEnum.appealed,
       subTitle: '',
       title: 'Votos recurridos',
@@ -111,7 +110,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       edit: true,
     },
     {
-      logo: 'src/assets/icon/mail-contested.svg',
+      logo: 'assets/icon/mail-contested.svg',
       type: FlatListTypeEnum.contested,
       subTitle: '',
       title: 'Votos identidad impugnada',
@@ -119,7 +118,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       edit: true,
     },
     {
-      logo: 'src/assets/icon/mail-person.svg',
+      logo: 'assets/icon/mail-person.svg',
       type: FlatListTypeEnum.electoralCommand,
       subTitle: '',
       title: 'Votos de comando electoral',
@@ -127,7 +126,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       edit: true,
     },
     {
-      logo: 'src/assets/icon/mail-closed.svg',
+      logo: 'assets/icon/mail-closed.svg',
       type: FlatListTypeEnum.blank,
       subTitle: '',
       title: 'Votos en blanco',
@@ -138,7 +137,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
 
   return (
     <section className="bg-white items-center flex flex-col">
-      <FormHeader routerLink="/verify-certificate" title="" />
+      <Navbar routerLink="/verify-certificate" />
       <div className="container mx-auto p-2">
         <div className="flex items-center justify-center my-210">
           <ProgressIndicator
@@ -146,7 +145,6 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
               ProgressStepStatus.Successful,
               ProgressStepStatus.Successful,
               ProgressStepStatus.Active,
-              ProgressStepStatus.Pending,
             ]}
           />
         </div>
@@ -160,22 +158,24 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
             </div>
             <input
               type="number"
-              value={circuit}
+              value={circuit === 0 ? '' : circuit}
+              placeholder="0"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 handleCircuitChange(Number(e.target.value))
               }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-xl ${circuitInputStyle}`}
+              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${circuitInputStyle}`}
             />
           </div>
           <div>
             <div className="text-violet-brand font-bold text-xl my-2">Mesa</div>
             <input
               type="number"
-              value={table}
+              value={table === 0 ? '' : table}
+              placeholder="0"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 handleTableChange(Number(e.target.value))
               }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-xl ${tableInputStyle}`}
+              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${tableInputStyle}`}
             />
           </div>
         </div>
@@ -186,11 +186,12 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
             </div>
             <input
               type="number"
-              value={electors}
+              value={electors === 0 ? '' : electors}
+              placeholder="0"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 handleElectorsChange(Number(e.target.value))
               }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-xl ${electorsInputStyle}`}
+              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${electorsInputStyle}`}
             />
           </div>
         </div>
@@ -201,11 +202,12 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
             </div>
             <input
               type="number"
-              value={envelopes}
+              value={envelopes === 0 ? '' : envelopes}
+              placeholder="0"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 handleEnvelopesChange(Number(e.target.value))
               }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-xl ${envelopesInputStyle}`}
+              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${envelopesInputStyle}`}
             />
           </div>
         </div>
@@ -215,17 +217,17 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
         >
           <div className="flex p-2 justify-between items-center w-full  max-w-md ">
             <div
-              className={`text-xl text-neutral-700 font-bold px-3 py-5 tracking-wide ${electorsEnvelopesDiffStyle}`}
+              className={`text-2xl text-neutral-700 font-bold px-3 py-5 tracking-wide ${electorsEnvelopesDiffStyle}`}
             >
               {electorsEnvelopesDiffStyle ? (
                 <div className="flex flex-row gap-2">
-                  Diferencia <img src="src/assets/icon/warn-icon.svg"></img>
+                  Diferencia <img src="assets/icon/warn-icon.svg"></img>
                 </div>
               ) : (
                 <div className="">Diferencia</div>
               )}
             </div>
-            <div className="text-xl font-semibold px-3 py-5 mr-10">
+            <div className="text-2xl font-semibold px-3 py-5 mr-10">
               {electors - envelopes}
             </div>
           </div>
@@ -259,14 +261,14 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
             >
               {totalVotesDiffStyle ? (
                 <div className="flex flex-row gap-2">
-                  Total <img src="src/assets/icon/warn-icon.svg"></img>
+                  Total <img src="assets/icon/warn-icon.svg"></img>
                 </div>
               ) : (
                 'Total'
               )}
             </div>
             <div
-              className={`text-xl font-semibold px-3 py-5 mr-10 ${totalVotesDiffStyle}`}
+              className={`text-2xl font-semibold px-3 py-5 mr-10 ${totalVotesDiffStyle}`}
             >
               {totalVotes}
             </div>
@@ -292,11 +294,11 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
                   className="before:content[''] peer relative h-7 w-7 cursor-pointer appearance-none rounded-md border-2 border-violet-brand transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-violet-brand checked:bg-violet-brand checked:before:bg-violet-500 hover:before:opacity-10"
                 />
                 <div className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
-                  <img src="src/assets/icon/check-icon.svg" alt="check" />
+                  <img src="assets/icon/check-icon.svg" alt="check" />
                 </div>
               </label>
             </div>
-            <div className="px-3">
+            <div className="px-3 cursor-pointer" onClick={handleCheckbox}>
               <h3 className="text-start text-base">
                 Verifico que controlé y que todos los datos son correctos.
               </h3>
@@ -315,6 +317,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
                 className="bg-violet-brand p-4 text-white rounded-xl font-semibold text-xl tracking-wider w-full"
                 type="submit"
                 label="Enviar Datos"
+                
               />
             </Link>
           ) : (
@@ -328,13 +331,11 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
           )}
         </div>
         <div className="flex items-center justify-center my-10">
-          <Link to="/" className="w-full mx-6">
-            <Button
-              className="text-red bg-transparent p-3 w-full rounded-xl text-xl"
-              type="submit"
-              label="Denunciar Irregularidad"
-            />
-          </Link>
+          <Button
+            className="text-red bg-transparent p-3 w-full rounded-xl text-xl"
+            type="button"
+            label="Denunciar Irregularidad"
+          />
         </div>
       </div>
     </section>

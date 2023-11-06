@@ -1,96 +1,42 @@
-import { FC } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { observer } from 'mobx-react';
+import toast, { Toaster } from 'react-hot-toast';
+import { Formik, Field, Form } from 'formik';
+import * as Yup from 'yup';
+
+import { ILoadInformationProps, FormValues } from './types';
+
+import { paths } from '#/routes/paths';
+
 import Button from '#/components/button';
 import FlatList from '#/components/flatList';
 import ProgressIndicator from '#/components/progressIndicator';
 import Navbar from '#/components/navbar';
 import { FlatListTypeEnum } from '#/components/flatList/types';
 import { ProgressStepStatus } from '#/components/progressIndicator/types';
-import { ILoadInformationProps } from './types';
+import { TextField } from '@mui/material';
 
-import { useState } from 'react';
 
-import './styles.css';
-
-const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
-  // Migrate to global state later?
-  const [circuit, setCircuit] = useState<number>(0);
-  const [table, setTable] = useState<number>(0);
-  const [electors, setElectors] = useState<number>(0);
-  const [envelopes, setEnvelopes] = useState<number>(0);
-
-  const [totalVotes, setTotalVotes] = useState<number>(0);
-  const [correctData, setCorrectData] = useState<boolean>(false);
-
-  const handleCircuitChange = (value: number) => {
-    const newValue: number = value;
-    if (newValue >= 0) {
-      setCircuit(newValue);
-    }
-  };
-
-  const handleTableChange = (value: number) => {
-    const newValue: number = value;
-    if (newValue >= 0) {
-      setTable(newValue);
-    }
-  };
-
-  const handleElectorsChange = (value: number) => {
-    const newValue: number = value;
-    if (newValue >= 0) {
-      setElectors(newValue);
-    }
-  };
-
-  const handleEnvelopesChange = (value: number) => {
-    const newValue: number = value;
-    if (newValue >= 0) {
-      setEnvelopes(newValue);
-    }
-  };
-
-  const updateTotalVotes = (newValue: number) => {
-    setTotalVotes((prevTotal: number) => prevTotal + newValue);
-  };
-
-  const handleCheckbox = () => {
-    setCorrectData((correctData) => !correctData);
-  };
-
-  // Conditional styles
+const LoadInformationPage: FC<ILoadInformationProps> = () => {
   const selectedInputStyle: string = 'border-2 border-violet-brand !text-black';
-
-  const circuitInputStyle: string | null =
-    circuit > 0 ? selectedInputStyle : null;
-  const tableInputStyle: string | null = table > 0 ? selectedInputStyle : null;
-  const electorsInputStyle: string | null =
-    electors > 0 ? selectedInputStyle : null;
-  const envelopesInputStyle: string | null =
-    envelopes > 0 ? selectedInputStyle : null;
-
-  const electorsEnvelopesDiffStyle: string | null =
-    electors - envelopes > 4 || electors - envelopes < 0 ? 'text-red' : null;
-
-  const totalVotesDiffStyle: string | null =
-    envelopes - totalVotes != 0 ? '!text-red' : null;
+  const errorInputStyle: string = 'border-2 !border-red !text-red-error';
 
   const flatList = [
     {
-      logo: 'assets/logos/lla-logo.svg',
+      logo: 'assets/logos/lla-min.svg',
       type: FlatListTypeEnum.milei,
       subTitle: 'Milei',
       title: 'Javier Gerardo',
-      votes: 0,
+      votes: '',
       edit: true,
     },
     {
-      logo: 'assets/logos/uxp.svg',
+      logo: 'assets/logos/uxp-min.svg',
       type: FlatListTypeEnum.massa,
       subTitle: 'Massa',
       title: 'Sergio Tomas',
-      votes: 0,
+      votes: '',
       edit: true,
     },
     {
@@ -98,7 +44,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       type: FlatListTypeEnum.null,
       subTitle: '',
       title: 'Votos nulos',
-      votes: 0,
+      votes: '',
       edit: true,
     },
     {
@@ -106,7 +52,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       type: FlatListTypeEnum.appealed,
       subTitle: '',
       title: 'Votos recurridos',
-      votes: 0,
+      votes: '',
       edit: true,
     },
     {
@@ -114,7 +60,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       type: FlatListTypeEnum.contested,
       subTitle: '',
       title: 'Votos identidad impugnada',
-      votes: 0,
+      votes: '',
       edit: true,
     },
     {
@@ -122,7 +68,7 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       type: FlatListTypeEnum.electoralCommand,
       subTitle: '',
       title: 'Votos de comando electoral',
-      votes: 0,
+      votes: '',
       edit: true,
     },
     {
@@ -130,213 +76,442 @@ const LoadInformationPage: FC<ILoadInformationProps> = ({ message }) => {
       type: FlatListTypeEnum.blank,
       subTitle: '',
       title: 'Votos en blanco',
-      votes: 0,
+      votes: '',
       edit: true,
     },
   ];
 
+  const [progressStatus, setProgressStatus] = useState([
+    ProgressStepStatus.Successful,
+    ProgressStepStatus.Successful,
+    ProgressStepStatus.Active,
+  ]);
+
+  const initialValues: FormValues = {
+    circuit: '',
+    table: '',
+    electors: '',
+    envelopes: '',
+    totalVotes: 0,
+    correctData: false,
+  };
+
+  const validationSchema = Yup.object().shape({
+    circuit: Yup.number().min(0).required(''),
+    table: Yup.number().min(0).required(''),
+    electors: Yup.number().min(0).positive().required(''),
+    envelopes: Yup.number().min(0).positive().required(''),
+    totalVotes: Yup.number().min(0).positive().required(''),
+    correctData: Yup.boolean().required(''),
+  });
+
+  const onSubmit = async (values: FormValues) => {
+    values.totalVotes = totalVotes;
+  };
+
+  const [formValues, setFormValues] = useState(initialValues);
+  const [totalVotes, setTotalVotes] = useState<number>(0);
+  const [correctCertificate, setCorrectCertificate] = useState<boolean>(false);
+  const [votesDifference, setVotesDifference] = useState<boolean>(false);
+
+  const getValidationProps = () => {
+    return {
+      onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const forbiddenKeys = [
+          'e',
+          'E',
+          '+',
+          '-',
+          ',',
+          '.',
+          'ArrowUp',
+          'ArrowDown',
+        ];
+        if (forbiddenKeys.includes(e.key)) {
+          e.preventDefault();
+        }
+      },
+      onPaste: (e: React.ClipboardEvent<HTMLInputElement>) =>
+        e.preventDefault(),
+      onContextMenu: (e: React.MouseEvent<HTMLInputElement>) =>
+        e.preventDefault(),
+      onDrop: (e: React.DragEvent<HTMLInputElement>) => e.preventDefault(),
+      onWheel: (e: React.WheelEvent<HTMLInputElement>) => {
+        if (e.target instanceof HTMLElement) {
+          e.target.blur();
+        }
+      },
+      autoComplete: 'off',
+    };
+  };
+
+  const updateCorrectCertificateData = (values: FormValues) => {
+    const { circuit, table, electors, envelopes } = values;
+    circuit && table && electors && (envelopes || envelopes === 0)
+      ? setCorrectCertificate(true)
+      : setCorrectCertificate(false);
+  };
+
+  const updateVotesDifference = (values: FormValues) => {
+    const { electors, envelopes } = values;
+    typeof electors === 'number' &&
+      typeof envelopes === 'number' &&
+      (electors - envelopes < 0
+        ? setVotesDifference(true)
+        : setVotesDifference(false));
+  };
+
+  useEffect(() => {
+    updateVotesDifference(formValues);
+    updateCorrectCertificateData(formValues);
+    updateProgressStatus();
+  }, [totalVotes, formValues, correctCertificate, votesDifference]);
+
+  const updateProgressStatus = () => {
+    setProgressStatus([
+      ProgressStepStatus.Successful,
+      ProgressStepStatus.Successful,
+      formValues.correctData && correctCertificate && !votesDifference
+        ? ProgressStepStatus.Active
+        : ProgressStepStatus.Error,
+    ]);
+  };
+
+  const updateTotalVotes = (newValue: number) => {
+    setTotalVotes((prevTotal: number) => prevTotal + newValue);
+  };
+  const handleToast = (type: string) => {
+    try {
+      if (type === 'submit') {
+        toast.success('Se está cargando la información...', {
+          icon: '✔',
+        });
+      } else {
+        toast.error(
+          'Debes completar TODOS los datos requeridos, y aceptar el boton de verificación',
+          {
+            icon: '⛔',
+          },
+        );
+      }
+    } catch (error) {
+      toast.error('Oh oh algo está mal... Por favor, actualice la página', {
+        icon: '♻',
+      });
+    } finally {
+    }
+  };
+
   return (
     <section className="bg-white items-center flex flex-col">
       <Navbar routerLink="/verify-certificate" />
-      <div className="container mx-auto p-2">
-        <div className="flex items-center justify-center my-210">
-          <ProgressIndicator
-            steps={[
-              ProgressStepStatus.Successful,
-              ProgressStepStatus.Successful,
-              ProgressStepStatus.Active,
-            ]}
-          />
-        </div>
-        <div className="py-8 text-neutral-700 text-xl font-bold">
-          Cargar datos del certificado
-        </div>
-        <div className="flex flex-row w-full justify-center gap-24">
-          <div>
-            <div className="text-violet-brand font-bold text-xl my-2">
-              Circuito
-            </div>
-            <input
-              type="number"
-              value={circuit === 0 ? '' : circuit}
-              placeholder="0"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleCircuitChange(Number(e.target.value))
-              }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${circuitInputStyle}`}
-            />
-          </div>
-          <div>
-            <div className="text-violet-brand font-bold text-xl my-2">Mesa</div>
-            <input
-              type="number"
-              value={table === 0 ? '' : table}
-              placeholder="0"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleTableChange(Number(e.target.value))
-              }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${tableInputStyle}`}
-            />
-          </div>
-        </div>
-        <div className="flex items-center justify-center w-full p-2">
-          <div className="flex p-2 justify-between items-center w-full  max-w-md ">
-            <div className="text-xl text-neutral-700 font-bold px-3 py-5 tracking-wide">
-              Cantidad de electores
-            </div>
-            <input
-              type="number"
-              value={electors === 0 ? '' : electors}
-              placeholder="0"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleElectorsChange(Number(e.target.value))
-              }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${electorsInputStyle}`}
-            />
-          </div>
-        </div>
-        <div className="flex items-center justify-center w-full p-2">
-          <div className="flex p-2 justify-between items-center w-full  max-w-md ">
-            <div className="text-xl text-neutral-700 font-bold px-3 py-5 tracking-wide">
-              Cantidad de sobres
-            </div>
-            <input
-              type="number"
-              value={envelopes === 0 ? '' : envelopes}
-              placeholder="0"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleEnvelopesChange(Number(e.target.value))
-              }
-              className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${envelopesInputStyle}`}
-            />
-          </div>
-        </div>
-        <hr className="h-[2px] my-1 bg-gray-400/50 border-0 max-w-md mx-auto"></hr>
-        <div
-          className={`flex items-center justify-center w-full p-2 ${electorsEnvelopesDiffStyle}`}
+      <div className="container mx-auto p-4">
+        <Formik
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          onSubmit={onSubmit}
         >
-          <div className="flex p-2 justify-between items-center w-full  max-w-md ">
-            <div
-              className={`text-2xl text-neutral-700 font-bold px-3 py-5 tracking-wide ${electorsEnvelopesDiffStyle}`}
-            >
-              {electorsEnvelopesDiffStyle ? (
-                <div className="flex flex-row gap-2">
-                  Diferencia <img src="assets/icon/warn-icon.svg"></img>
+          {({ errors, touched, values, setFieldValue, handleChange }) => {
+            useEffect(() => {
+              setFormValues(values);
+            }, [values]);
+            return (
+              <Form>
+                <div className="flex items-center justify-center">
+                  <ProgressIndicator steps={progressStatus} />
                 </div>
-              ) : (
-                <div className="">Diferencia</div>
-              )}
-            </div>
-            <div className="text-2xl font-semibold px-3 py-5 mr-10">
-              {electors - envelopes}
-            </div>
-          </div>
-        </div>
-        <div className="text-sm text-red max-w-md mx-auto text-left -mt-8 p-5">
-          {electors - envelopes > 4
-            ? 'La diferencia de votos no puede ser mayor a 4, esta mesa debe ser impugnada'
-            : null}
-        </div>
-        <hr className="h-[2px] my-1 bg-gray-400/50 border-0 max-w-md mx-auto"></hr>
-        {flatList.map((item, index) => (
-          <div
-            className="flex items-center justify-center my-6 w-full p-2"
-            key={index}
-          >
-            <FlatList
-              logo={item.logo}
-              type={item.type}
-              subTitle={item.subTitle}
-              title={item.title}
-              votes={item.votes}
-              edit={item.edit}
-              updateTotalVotes={updateTotalVotes}
-            />
-          </div>
-        ))}
-        <div className="flex items-center justify-center my-6 w-full p-2">
-          <div className="flex p-2 justify-between items-center w-full  max-w-md">
-            <div
-              className={`text-3xl text-violet-brand font-bold px-3 py-5 tracking-wide ${totalVotesDiffStyle}`}
-            >
-              {totalVotesDiffStyle ? (
-                <div className="flex flex-row gap-2">
-                  Total <img src="assets/icon/warn-icon.svg"></img>
+                <div className="py-8 text-neutral-700 text-xl font-bold">
+                  Completá los datos del <br />
+                  certificado
                 </div>
-              ) : (
-                'Total'
-              )}
-            </div>
-            <div
-              className={`text-2xl font-semibold px-3 py-5 mr-10 ${totalVotesDiffStyle}`}
-            >
-              {totalVotes}
-            </div>
-          </div>
-        </div>
-        <div className="text-base text-red max-w-md mx-auto text-left -mt-16 p-5">
-          {envelopes - totalVotes != 0
-            ? 'El total de votos no coincide con la cantidad de sobres. Revisa los datos cargados'
-            : null}
-        </div>
-        <div className="flex items-center justify-center text-sm my-10">
-          <div className="flex items-center px-12">
-            <div className="inline-flex items-center">
-              <label
-                className="relative flex items-center p-3 rounded-full cursor-pointer"
-                data-ripple-dark="true"
-              >
-                <input
-                  id="login"
-                  type="checkbox"
-                  checked={correctData}
-                  onChange={handleCheckbox}
-                  className="before:content[''] peer relative h-7 w-7 cursor-pointer appearance-none rounded-md border-2 border-violet-brand transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-violet-brand checked:bg-violet-brand checked:before:bg-violet-500 hover:before:opacity-10"
-                />
-                <div className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
-                  <img src="assets/icon/check-icon.svg" alt="check" />
+
+                <div className="flex w-full justify-center gap-6 sm:gap-24">
+                  <div>
+                    <TextField
+                      InputLabelProps={{ style: { opacity: '0.6' } }}
+                      InputProps={{ style: { borderRadius: '8px' } }}
+                      sx={{ width: '100%' }}
+                      type="number"
+                      label="Circuito"
+                      name="circuit"
+                      variant="outlined"
+                      placeholder="000D"
+                      {...getValidationProps()}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        handleChange(e);
+                      }}
+                      className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${
+                        values.circuit ? selectedInputStyle : ''
+                      } ${
+                        touched.circuit && errors.circuit ? errorInputStyle : ''
+                      } `}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="inline-block my-2 text-violet-brand font-bold text-xl"
+                      htmlFor="table"
+                    ></label>
+                    <TextField
+                      InputLabelProps={{
+                        style: { opacity: '0.6' },
+                      }}
+                      InputProps={{
+                        style: { borderRadius: '8px' },
+                      }}
+                      sx={{ width: '100%' }}
+                      type="number"
+                      name="table"
+                      label="Mesa"
+                      placeholder="00000/0"
+                      {...getValidationProps()}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        handleChange(e);
+                      }}
+                      className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl ${
+                        values.table ? selectedInputStyle : ''
+                      } ${
+                        touched.table && errors.table ? errorInputStyle : ''
+                      }`}
+                    />
+                  </div>
                 </div>
-              </label>
-            </div>
-            <div className="px-3 cursor-pointer" onClick={handleCheckbox}>
-              <h3 className="text-start text-base">
-                Verifico que controlé y que todos los datos son correctos.
-              </h3>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center justify-center my-10">
-          {/* TODO: EL estado de ProgressBar.error deberia ponerse cuando no cumpla esta condicion */}
-          {0 <= electors - envelopes &&
-          electors - envelopes <= 4 &&
-          envelopes - totalVotes === 0 &&
-          totalVotes != 0 &&
-          correctData ? (
-            <Link to="/send-success" className="w-full mx-6">
-              <Button
-                className="bg-violet-brand p-4 text-white rounded-xl font-semibold text-xl tracking-wider w-full"
-                type="submit"
-                label="Enviar Datos"
-                
-              />
-            </Link>
-          ) : (
-            <div className="w-full mx-6">
-              <Button
-                className="bg-gray-300 p-4 text-black rounded-xl font-semibold text-xl tracking-wider w-full cursor-default"
-                type="submit"
-                label="Enviar Datos"
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-center my-10">
-          <Button
-            className="text-red bg-transparent p-3 w-full rounded-xl text-xl"
-            type="button"
-            label="Denunciar Irregularidad"
-          />
-        </div>
+
+                <div className="flex w-full justify-center gap-6 sm:gap-24">
+                  <div className="py-6">
+                    <TextField
+                      InputLabelProps={{
+                        style: { opacity: '0.6' },
+                      }}
+                      InputProps={{
+                        style: { borderRadius: '8px' },
+                      }}
+                      sx={{ width: '100%' }}
+                      type="number"
+                      name="electors"
+                      label="Nro de electores"
+                      placeholder="0"
+                      {...getValidationProps()}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        handleChange(e);
+                      }}
+                      className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl 
+              ${values.electors ? selectedInputStyle : ''}
+              ${votesDifference && touched.electors ? errorInputStyle : ''}`}
+                    />
+                  </div>
+
+                  <div className="py-6">
+                    <div className="">
+                      <TextField
+                        InputLabelProps={{
+                          style: { opacity: '0.6' },
+                        }}
+                        InputProps={{
+                          style: { borderRadius: '8px' },
+                        }}
+                        sx={{ width: '100%' }}
+                        type="number"
+                        name="envelopes"
+                        label="Sobres"
+                        placeholder="0"
+                        {...getValidationProps()}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          handleChange(e);
+                        }}
+                        className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-500 font-bold rounded-xl h-12 w-32 flex text-2xl
+                    ${values.envelopes ? selectedInputStyle : ''}
+              ${votesDifference && touched.envelopes ? errorInputStyle : ''}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <hr className="h-[2px] my-1 bg-gray-300/50 border-0 max-w-md mx-auto"></hr>
+                <div className="flex flex-col justify-center w-full py-5">
+                  <div className="text-left pl-1 pb-1 text-gray-darker">
+                    Diferencia
+                  </div>
+                  <div
+                    className={`flex justify-between items-center w-full px-3 !text-green-light bg-green-light/10 rounded-2xl ${
+                      votesDifference ? '!text-red-error !bg-red-error/5' : null
+                    } ${correctCertificate ? '' : null}`}
+                  >
+                    <div className="px-1 py-[14px] tracking-wide">
+                      {values.electors !== 0 && (
+                        <div className="flex flex-row gap-2">
+                          <span>
+                            {Number(values.electors) - Number(values.envelopes)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="font-2xl">
+                      {!votesDifference ? (
+                        <img src="/assets/icon/checkcircle.svg" alt="check" />
+                      ) : (
+                        <img src="/assets/icon/xcircle.svg" alt="error" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <hr className="h-[2px] my-1 bg-gray-300/50 border-0 max-w-md mx-auto"></hr>
+                <div className="flex flex-col items-center justify-center mt-[30px] w-full gap-4">
+                  {flatList.map((item, index) => (
+                    <Field key={index} name={`flatList.${index}`}>
+                      {({ field }: any) => (
+                        <FlatList
+                          {...field}
+                          logo={item.logo}
+                          type={item.type}
+                          subTitle={item.subTitle}
+                          title={item.title}
+                          votes={item.votes}
+                          edit={item.edit}
+                          updateTotalVotes={updateTotalVotes}
+                          getValidationProps={getValidationProps}
+                          correctCertificate={correctCertificate}
+                          isLastFive={index >= flatList.length - 5}
+                        />
+                      )}
+                    </Field>
+                  ))}
+                </div>
+
+                <div
+                  className={`flex items-center justify-center my-5 px-3 py-[0.375rem] w-full text-violet-brand tracking-wide rounded-2xl ${
+                    typeof values.envelopes === 'number'
+                      ? values.envelopes - totalVotes !== 0
+                        ? '!text-red-error bg-red-error/5'
+                        : '!text-green-light bg-green-light/10'
+                      : ''
+                  }`}
+                >
+                  <div className="flex justify-between py-2 items-center w-full max-w-md">
+                    <div>Votos totales: {totalVotes}</div>
+                    {typeof values.envelopes === 'number' ? (
+                      values.envelopes - totalVotes !== 0 ? (
+                        <div>
+                          <img src="/assets/icon/xcircle.svg" alt="error" />
+                        </div>
+                      ) : (
+                        <div>
+                          <img
+                            src="/assets/icon/checkcircle.svg"
+                            alt="success"
+                          />
+                        </div>
+                      )
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center text-sm pt-[0.625rem]">
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex items-center pb-[0.625rem]">
+                      <label
+                        className="relative flex items-center rounded-full cursor-pointer"
+                        data-ripple-dark="true"
+                      >
+                        <Field
+                          type="checkbox"
+                          name="correctData"
+                          checked={values.correctData}
+                          className={`
+                            before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border-2
+                            ${
+                              typeof values.envelopes === 'number'
+                                ? (!correctCertificate && votesDifference) ||
+                                  values.envelopes - totalVotes !== 0
+                                  ? 'checked:border-red border-red checked:bg-red'
+                                  : 'checked:border-green border-green checked:bg-green'
+                                : 'checked:border-violet-primary border-violet-primary checked:bg-violet-primary'
+                            }
+                            transition-all before:absolute before:top-2/4 before:left-2/4 before:block 
+                            before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 
+                            before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity 
+                            hover:before:opacity-10
+                          `}
+                        />
+                        <div className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
+                          <img src="/assets/icon/check-icon.svg" alt="check" />
+                        </div>
+                      </label>
+                    </div>
+                    <div
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setFieldValue('correctData', !values.correctData)
+                      }
+                    >
+                      <h3 className="text-left text-sm tracking-tight">
+                        Verifico que controlé y que todos los datos son
+                        correctos.
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center my-[1.875rem]">
+                  {!votesDifference &&
+                  !correctCertificate &&
+                  totalVotes === 0 ? (
+                    // case 1 - incomplete
+                    <div className="w-full">
+                      <Button
+                        onClick={() =>
+                          handleToast(
+                            votesDifference &&
+                              totalVotes !== 0 &&
+                              values.circuit !== 0 &&
+                              values.table !== 0 &&
+                              values.correctData
+                              ? 'submit'
+                              : 'button',
+                          )
+                        }
+                        className="p-[14px]  rounded-xl font-light text-[1.125rem] tracking-wider w-full"
+                        type="button"
+                        label="Enviar datos"
+                        disabled
+                        appearance="disabled"
+                      />
+                      <Toaster position="top-right" reverseOrder={false} />
+                    </div>
+                  ) : correctCertificate &&
+                    !votesDifference &&
+                    totalVotes === values.envelopes &&
+                    values.correctData ? (
+                    // case 2 - ok
+                    <Link to={paths.sendSuccess} className="w-full">
+                      <Button
+                        onClick={() => onSubmit(values)}
+                        className="p-[14px] rounded-xl font-light text-[1.125rem] tracking-wider w-full"
+                        type="submit"
+                        label="Enviar datos"
+                        appearance="filled"
+                      />
+                      <Toaster position="top-right" reverseOrder={false} />
+                    </Link>
+                  ) : (
+                    // case 3 - something wrong
+                    <Link to={paths.sendSuccess} className="w-full">
+                      <Button
+                        onClick={() => onSubmit(values)}
+                        className="p-[14px] rounded-xl font-light text-[1.125rem] tracking-wider w-full"
+                        type="submit"
+                        label="Enviar datos"
+                        appearance="error"
+                        // Seteo disabled hasta que este el feat del modal.
+                        disabled
+                      />
+                      <Toaster position="top-right" reverseOrder={false} />
+                    </Link>
+                  )}
+                </div>
+              </Form>
+            );
+          }}
+        </Formik>
       </div>
     </section>
   );

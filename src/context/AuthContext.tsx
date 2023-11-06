@@ -5,14 +5,16 @@ import {
   useState,
   useEffect,
 } from 'react';
-import useAxios from '#/hooks/utils/useAxios';
-import { IUser } from '#/interfaces/IUser';
 import { useNavigate } from 'react-router-dom';
+
+import useAxios from '#/hooks/utils/useAxios';
+import { IAuthData, IUser } from '#/interfaces/IUser';
+import { paths } from '#/routes/paths';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: IUser | null;
-  login: (user: IUser) => void;
+  login: (user: IAuthData) => void;
   logout: () => void;
   refreshToken: () => void;
 }
@@ -33,26 +35,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshToken();
   }, []);
 
-  const login = (userData: IUser) => {
-    sessionStorage.setItem('accessToken', userData.jwt);
+  const login = ({ data }: IAuthData): void => {
+    sessionStorage.setItem('accessToken', data?.accessToken);
     setIsAuthenticated(true);
-    setUser(userData);
+    setUser(data?.user);
   };
 
   const logout = () => {
     sessionStorage.removeItem('accessToken');
     setIsAuthenticated(false);
     setUser(null);
-    navigate('/login');
+    navigate(paths.login);
   };
 
   const refreshToken = async () => {
     const accessToken = sessionStorage.getItem('accessToken');
     if (!accessToken) return logout();
 
+    const options = {
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+      },
+    };
+
     // TODO: Validar q el token sea valido no este vencido, este firmado, etc.
 
-    const { data, error } = await axios.get('/refreshToken');
+    const { data, error } = await axios.post(
+      '/auth/sign-in-using-token',
+      {},
+      options,
+    );
     if (error) return logout();
 
     login(data);

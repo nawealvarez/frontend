@@ -4,16 +4,16 @@ import './styles.css';
 
 const ProgressIndicator = ({ steps }: IProgressIndicatorProps) => {
   return (
-    <div className="w-full flex justify-between items-center mt-4">
+    <div className="w-full flex justify-between items-center mt-4 px-1">
       {steps.map((step, index) => (
         <React.Fragment key={index}>
           <div
             className={`circle flex justify-center items-center rounded-full ${step === ProgressStepStatus.Active
-                ? 'bg-violet-brand text-white'
+                ? 'bg-violet-primary text-white'
                 : step === ProgressStepStatus.Successful
-                  ? 'bg-green-check text-white'
+                  ? 'bg-green text-white'
                   : step === ProgressStepStatus.Error
-                    ? 'bg-red-error text-white'
+                    ? 'bg-red text-white'
                     : 'bg-gray-light text-black'
               }`}
           >
@@ -29,9 +29,8 @@ const ProgressIndicator = ({ steps }: IProgressIndicatorProps) => {
                 src="assets/icon/error-icon.svg"
                 alt=""
               />
-              // Se agregó el progress de error
             ) : (
-              <span className="font-normal text-xl">
+              <span>
                 {(index + 1).toString()}
               </span>
             )}

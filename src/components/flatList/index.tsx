@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FlatListProps } from './types';
-
+import { TextField } from '@mui/material';
+import toast, { Toaster } from 'react-hot-toast';
 const FlatList = ({
   logo,
   type,
@@ -9,15 +10,32 @@ const FlatList = ({
   votes,
   edit = false,
   updateTotalVotes,
+  getValidationProps,
+  correctCertificate,
+  isLastFive,
 }: FlatListProps) => {
   const [vote, setVote] = useState<number>(votes);
 
   const handleVoteChange = (value: number) => {
-    const newValue: number = value;
-    if (newValue >= 0) {
-      setVote(newValue);
-      updateTotalVotes(newValue - vote);
+    if (value >= 0) {
+      if (value > 999) {
+        toast.error('Número ingresado no válido, Máximo 999', {
+          id: 'custom-toast',
+        });
+        setVote(999);
+        updateTotalVotes(999 - vote);
+      } else {
+        setVote(value);
+        updateTotalVotes(value - vote);
+      }
+    } else {
+      setVote(0);
     }
+  };
+
+  const formatValue = (value: number) => {
+    const formattedValue = Number(value.toString());
+    return formattedValue;
   };
 
   const titleColor: any = {
@@ -31,31 +49,52 @@ const FlatList = ({
   };
 
   const selectedInputStyle: string | null =
-    vote > 0 ? 'border-2 border-violet-brand !text-black' : null;
+    vote > 0 ? 'border-2 border-violet-primary !text-black' : null;
 
   return (
-    <div className="flex p-2 justify-between items-center w-full  max-w-md gap-4">
-      <img src={logo} alt="logo" className="w-16 h-16" />
-      <div className="flex flex-col justify-start items-start mt-3">
-        <label
-          className={` ${titleColor[type]} text-xl font-bold leading-[15px]`}
-        >
+    <div
+      className={`flex items-center w-full max-w-md gap-3 ${
+        !correctCertificate ? 'grayscale opacity-50' : ''
+      }`}
+    >
+      <img
+        src={logo}
+        alt="logo"
+        className={`self-start w-11 h-11 ${isLastFive ? 'p-2' : ''}`}
+      />
+
+      <div className="flex flex-col justify-start items-start w-2/3 mr-1">
+        {' '}
+        {/* Para subtitle y title */}
+        <label className={` ${titleColor[type]} text-xl text-left font-bold`}>
           {subTitle}
         </label>
-        <label
-          className={`text-neutral-700 mt-1 text-base font-semibold leading-7`}
-        >
-          {title}
-        </label>
+        <label className="text-gray-darker text-left">{title}</label>
       </div>
-      <input
-        type="number"
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleVoteChange(Number(e.target.value))}
-        value={vote === 0 ? '' : vote}
-        placeholder='0'
-        readOnly={!edit}
-        className={`border-2 text-center border-gray-300 outline-none cursor-default bg-white text-neutral-700 font-bold rounded-xl h-12 w-32 flex text-2xl ${selectedInputStyle}`}
-      />
+
+      <div className="flex items-center justify-end text-center">
+        {/* Para el TextField */}
+        <TextField
+          id="inaccessibleInput"
+          type="number"
+          {...getValidationProps()}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleVoteChange(Number(e.target.value))
+          }
+          InputLabelProps={{
+            style: { opacity: '0.6' },
+          }}
+          InputProps={{
+            style: { borderRadius: '8px' },
+          }}
+          value={vote === 0 ? '' : formatValue(vote)}
+          placeholder="000"
+          disabled={!correctCertificate ? edit : !edit}
+          className={` border-gray-300 outline-none cursor-default bg-white text-neutral-700 font-bold h-12 w-16 border-rounded-2xl ${selectedInputStyle}`}
+          style={{ display: 'flex', justifyContent: 'center' }}
+        />
+        <Toaster position="top-right" toastOptions={{ duration: 1500 }} />
+      </div>
     </div>
   );
 };
